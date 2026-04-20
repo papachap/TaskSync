@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskSync</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="noise"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span class="brand-name">TaskSync</span>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="tasks">Tasks</button>
+      <button class="nav-btn" data-view="time">Time Log</button>
+      <button class="nav-btn" data-view="calendar">Calendar</button>
+    </nav>
+    <div class="sidebar-footer">
+      <span id="save-status">● All saved</span>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <header class="view-header">
+        <h1>Good <span id="greeting-time"></span></h1>
+        <p class="subtitle">Here's your overview for today.</p>
+      </header>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total Tasks</span>
+          <span class="stat-value" id="stat-total">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Completed</span>
+          <span class="stat-value" id="stat-done">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">In Progress</span>
+          <span class="stat-value" id="stat-inprogress">0</span>
+        </div>
+        <div class="stat-card accent">
+          <span class="stat-label">Hours Logged</span>
+          <span class="stat-value" id="stat-hours">0h</span>
+        </div>
+      </div>
+      <div class="recent-section">
+        <h2>Recent Tasks</h2>
+        <ul class="task-list" id="recent-tasks"></ul>
+      </div>
+    </section>
+
+    <!-- TASKS -->
+    <section class="view" id="view-tasks">
+      <header class="view-header">
+        <h1>Tasks</h1>
+        <button class="btn-primary" id="open-task-modal">+ New Task</button>
+      </header>
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="todo">To Do</button>
+        <button class="filter-btn" data-filter="inprogress">In Progress</button>
+        <button class="filter-btn" data-filter="done">Done</button>
+      </div>
+      <ul class="task-list full" id="all-tasks"></ul>
+    </section>
+
+    <!-- TIME LOG -->
+    <section class="view" id="view-time">
+      <header class="view-header">
+        <h1>Time Log</h1>
+        <button class="btn-primary" id="open-timelog-modal">+ Log Time</button>
+      </header>
+      <table class="time-table">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Date</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Duration</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="time-log-body"></tbody>
+      </table>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="view" id="view-calendar">
+      <header class="view-header">
+        <h1>Calendar</h1>
+        <div class="cal-nav">
+          <button class="cal-arrow" id="cal-prev">&#8592;</button>
+          <span id="cal-month-label"></span>
+          <button class="cal-arrow" id="cal-next">&#8594;</button>
+        </div>
+      </header>
+      <div class="calendar-grid" id="calendar-grid"></div>
+    </section>
+
+  </main>
+
+  <!-- TASK MODAL -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <h2>New Task</h2>
+      <label>Title
+        <input type="text" id="task-title" placeholder="e.g. Review Q2 report"/>
+      </label>
+      <label>Description
+        <textarea id="task-desc" placeholder="Optional details..."></textarea>
+      </label>
+      <label>Due Date
+        <input type="date" id="task-due"/>
+      </label>
+      <label>Status
+        <select id="task-status">
+          <option value="todo">To Do</option>
+          <option value="inprogress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </label>
+      <label>Category
+        <input type="text" id="task-category" placeholder="e.g. Marketing, Dev..."/>
+      </label>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="close-task-modal">Cancel</button>
+        <button class="btn-primary" id="save-task">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIME LOG MODAL -->
+  <div class="modal-overlay" id="timelog-modal">
+    <div class="modal">
+      <h2>Log Time</h2>
+      <label>Task
+        <select id="log-task-select"></select>
+      </label>
+      <label>Date
+        <input type="date" id="log-date"/>
+      </label>
+      <label>Start Time
+        <input type="time" id="log-start"/>
+      </label>
+      <label>End Time
+        <input type="time" id="log-end"/>
+      </label>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="close-timelog-modal">Cancel</button>
+        <button class="btn-primary" id="save-timelog">Log Time</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
