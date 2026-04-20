@@ -1,3 +1,5 @@
+import { signIn, signOut, onAuthChange, getCurrentUser, syncToFirestore, loadFromFirestore } from './firebase.js';
+
 const STORAGE_KEY = 'tasksync_data';
 
 let state = {
@@ -8,7 +10,11 @@ let state = {
 function saveState() {
   setSaveStatus('saving');
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  setTimeout(() => setSaveStatus('saved'), 600);
+  if (getCurrentUser()) {
+    syncToFirestore(state).then(() => setSaveStatus('saved')).catch(() => setSaveStatus('saved'));
+  } else {
+    setTimeout(() => setSaveStatus('saved'), 600);
+  }
 }
 
 function loadState() {
@@ -17,6 +23,20 @@ function loadState() {
     try { state = JSON.parse(raw); }
     catch(e) { console.warn('Failed to parse stored data', e); }
   }
+}
+
+async function loadFromCloud() {
+  const data = await loadFromFirestore();
+  if (data) {
+    state.tasks = data.tasks || [];
+    state.timeLogs = data.timeLogs || [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+  renderDashboard();
+  renderTasks();
+  renderTimeLog();
+  renderCalendar();
+  populateTaskSelect();
 }
 
 function setSaveStatus(status) {
@@ -319,3 +339,32 @@ setGreeting();
 renderDashboard();
 renderTasks();
 populateTaskSelect();
+
+// Auth UI
+document.getElementById('signin-btn').addEventListener('click', () => {
+  signIn().catch(err => console.error('Sign-in failed', err));
+});
+
+document.getElementById('signout-btn').addEventListener('click', () => {
+  signOut().catch(err => console.error('Sign-out failed', err));
+});
+
+onAuthChange(user => {
+  const signinBtn = document.getElementById('signin-btn');
+  const userInfo  = document.getElementById('user-info');
+  const avatar    = document.getElementById('user-avatar');
+  const userName  = document.getElementById('user-name');
+
+  if (user) {
+    signinBtn.style.display = 'none';
+    userInfo.style.display  = 'flex';
+    avatar.src = user.photoURL || '';
+    userName.textContent = user.displayName || user.email;
+    loadFromCloud();
+  } else {
+    signinBtn.style.display = '';
+    userInfo.style.display  = 'none';
+    avatar.src = '';
+    userName.textContent = '';
+  }
+});

@@ -24,6 +24,14 @@
     </nav>
     <div class="sidebar-footer">
       <span id="save-status">● All saved</span>
+      <div id="auth-area">
+        <button class="btn-ghost" id="signin-btn">Sign in with Google</button>
+        <div id="user-info" style="display:none">
+          <img id="user-avatar" src="" alt="" width="24" height="24" style="border-radius:50%;vertical-align:middle;"/>
+          <span id="user-name"></span>
+          <button class="btn-ghost" id="signout-btn">Sign out</button>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -163,6 +171,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
