@@ -25,6 +25,86 @@ function loadState() {
   }
 }
 
+// --- Timer ---
+const TIMER_KEY = 'tasksync_timer';
+
+let timerState = { taskId: null, wallClockStart: null, startedAt: null, elapsed: 0 };
+
+function loadTimerState() {
+  try {
+    const raw = localStorage.getItem(TIMER_KEY);
+    if (raw) timerState = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveTimerState() {
+  localStorage.setItem(TIMER_KEY, JSON.stringify(timerState));
+}
+
+function getElapsedMs() {
+  return (timerState.startedAt ? Date.now() - timerState.startedAt : 0) + timerState.elapsed;
+}
+
+function formatElapsed(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function formatHHMM(date) {
+  return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+function startTimer(taskId) {
+  timerState = { taskId, wallClockStart: new Date().toISOString(), startedAt: Date.now(), elapsed: 0 };
+  const task = state.tasks.find(t => t.id === taskId);
+  if (task && task.status === 'todo') task.status = 'inprogress';
+  saveTimerState();
+  saveState();
+  renderTasks();
+  renderDashboard();
+}
+
+function resumeTimer() {
+  timerState.startedAt = Date.now();
+  saveTimerState();
+  renderTasks();
+  renderDashboard();
+}
+
+function pauseTimer() {
+  timerState.elapsed += Date.now() - timerState.startedAt;
+  timerState.startedAt = null;
+  saveTimerState();
+  renderTasks();
+  renderDashboard();
+}
+
+function stopTimer() {
+  if (!timerState.taskId) return;
+  const startDate = new Date(timerState.wallClockStart);
+  const endDate   = new Date();
+  state.timeLogs.push({
+    id: Date.now().toString(),
+    taskId: timerState.taskId,
+    date:  startDate.toISOString().split('T')[0],
+    start: formatHHMM(startDate),
+    end:   formatHHMM(endDate),
+  });
+  const task = state.tasks.find(t => t.id === timerState.taskId);
+  if (task) task.status = 'done';
+  timerState = { taskId: null, wallClockStart: null, startedAt: null, elapsed: 0 };
+  saveTimerState();
+  saveState();
+  renderTasks();
+  renderTimeLog();
+  renderDashboard();
+}
+// --- End Timer ---
+
 async function loadFromCloud() {
   const data = await loadFromFirestore();
   if (data) {
@@ -94,6 +174,7 @@ function renderDashboard() {
     ? recent.map(taskHTML).join('')
     : '<div class="empty-state">No tasks yet — add your first task!</div>';
   bindDeleteButtons(ul);
+  bindTimerButtons(ul);
 }
 
 let currentFilter = 'all';
@@ -106,15 +187,36 @@ function renderTasks() {
     ? [...filtered].reverse().map(taskHTML).join('')
     : '<div class="empty-state">No tasks found.</div>';
   bindDeleteButtons(ul);
+  bindTimerButtons(ul);
 }
 
 function taskHTML(task) {
+  const isActive  = timerState.taskId === task.id;
+  const isRunning = isActive && timerState.startedAt !== null;
+  const isPaused  = isActive && timerState.startedAt === null;
+  let timerControls = '';
+  if (task.status !== 'done') {
+    if (isRunning) {
+      timerControls = `
+        <span class="timer-elapsed" id="timer-${task.id}">${formatElapsed(getElapsedMs())}</span>
+        <button class="btn-timer pause" data-timer-pause title="Pause">⏸</button>
+        <button class="btn-timer stop" data-timer-stop title="Done">⏹</button>`;
+    } else if (isPaused) {
+      timerControls = `
+        <span class="timer-elapsed paused" id="timer-${task.id}">${formatElapsed(getElapsedMs())}</span>
+        <button class="btn-timer start" data-timer-resume title="Resume">▶</button>
+        <button class="btn-timer stop" data-timer-stop title="Done">⏹</button>`;
+    } else if (!timerState.taskId) {
+      timerControls = `<button class="btn-timer start" data-timer-start="${task.id}" title="Start timer">▶</button>`;
+    }
+  }
   return `
-    <li class="task-item" data-id="${task.id}">
+    <li class="task-item${isRunning ? ' running' : ''}" data-id="${task.id}">
       <div class="task-info">
         <div class="task-name">${escapeHTML(task.title)}</div>
         <div class="task-meta">${task.category ? task.category + ' · ' : ''}${task.due || 'No due date'}</div>
       </div>
+      <div class="timer-controls">${timerControls}</div>
       <span class="badge badge-${task.status}">${statusLabel(task.status)}</span>
       <button class="task-delete" data-id="${task.id}" title="Delete">✕</button>
     </li>`;
@@ -125,11 +227,30 @@ function bindDeleteButtons(container) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = btn.dataset.id;
+      if (timerState.taskId === id) {
+        timerState = { taskId: null, wallClockStart: null, startedAt: null, elapsed: 0 };
+        saveTimerState();
+      }
       state.tasks = state.tasks.filter(t => t.id !== id);
       saveState();
       renderTasks();
       renderDashboard();
     });
+  });
+}
+
+function bindTimerButtons(container) {
+  container.querySelectorAll('[data-timer-start]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); startTimer(btn.dataset.timerStart); });
+  });
+  container.querySelectorAll('[data-timer-resume]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); resumeTimer(); });
+  });
+  container.querySelectorAll('[data-timer-pause]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); pauseTimer(); });
+  });
+  container.querySelectorAll('[data-timer-stop]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); stopTimer(); });
   });
 }
 
@@ -334,11 +455,18 @@ function escapeHTML(str) {
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+loadTimerState();
 loadState();
 setGreeting();
 renderDashboard();
 renderTasks();
 populateTaskSelect();
+
+setInterval(() => {
+  if (!timerState.taskId || !timerState.startedAt) return;
+  const el = document.getElementById('timer-' + timerState.taskId);
+  if (el) el.textContent = formatElapsed(getElapsedMs());
+}, 1000);
 
 // Auth UI
 document.getElementById('signin-btn').addEventListener('click', () => {

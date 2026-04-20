@@ -407,3 +407,44 @@ nav {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* Timer controls */
+.timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-timer {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-timer.start { border-color: rgba(200,240,74,0.3); color: var(--accent); }
+.btn-timer.start:hover { background: rgba(200,240,74,0.1); }
+.btn-timer.pause { border-color: rgba(123,97,255,0.3); color: var(--accent2); }
+.btn-timer.pause:hover { background: rgba(123,97,255,0.1); }
+.btn-timer.stop  { border-color: rgba(255,95,95,0.3); color: var(--danger); }
+.btn-timer.stop:hover  { background: rgba(255,95,95,0.1); }
+
+.timer-elapsed {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  min-width: 42px;
+  text-align: right;
+}
+.timer-elapsed.paused { color: var(--muted); }
+
+.task-item.running {
+  border-color: rgba(200,240,74,0.35);
+  box-shadow: 0 0 0 1px rgba(200,240,74,0.08);
+}
